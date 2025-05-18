@@ -12,6 +12,10 @@
 * **Permission Handling:** Includes helpers to check and request the "display over other apps" permission on Android.
 
 
+## Screenshots
+
+<video src="https://github.com/bhavukar/overlay_keeb/blob/master/sample.mp4" controls="controls" style="max-width: 730px;">
+</video>
 
 
 1.  Add this to your package's `pubspec.yaml` file:
