@@ -1,6 +1,8 @@
 # Overlay Keeb Flutter Plugin
 
-[![pub package](https://img.shields.io/badge/pub-coming_soon-blue.svg)](https://pub.dev/packages/overlay_keeb) A Flutter plugin that allows you to display a custom Flutter widget as an overlay, typically appearing above the keyboard, similar to WhatsApp's attachment menu. This plugin currently supports Android.
+[![pub package](https://img.shields.io/badge/pub-coming_soon-blue.svg)](https://pub.dev/packages/overlay_keeb) 
+
+A Flutter plugin that allows you to display a custom Flutter widget as an overlay, typically appearing above the keyboard, similar to WhatsApp's attachment menu. This plugin currently supports Android.
 
 ## Features
 
@@ -13,9 +15,8 @@
 
 
 ## Screenshots
+https://github.com/user-attachments/assets/dc4a2c26-02e0-42fc-a0ff-beb19adfcb15
 
-<video src="https://github.com/bhavukar/overlay_keeb/blob/master/sample.mp4" controls="controls" style="max-width: 730px;">
-</video>
 
 
 1.  Add this to your package's `pubspec.yaml` file:
