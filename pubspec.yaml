@@ -1,7 +1,10 @@
 name: overlay_keeb
-description: "A new Flutter project."
+description: "Flutter plugin that enables custom overlay keyboards on Android and iOS"
 version: 0.0.1
-homepage:
+repository: https://github.com/bhavukar/overlay_keeb
+homepage: https://www.bhavuk.space/
+issue_tracker: https://github.com/bhavukar/overlay_keeb/issues
+
 
 environment:
   sdk: ^3.7.2

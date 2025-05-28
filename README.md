@@ -5,13 +5,11 @@
 ## Features
 
 * **Custom Flutter UI Overlay:** Display any Flutter widget content (defined within the plugin's secondary Dart entrypoint) in a native overlay window.
-* **Android Support:** Works on Android, leveraging native capabilities for overlay display.
 * **Above Keyboard Presentation:** Designed to appear above the soft keyboard without dismissing it.
-* **Configurable Height:** The height of the overlay can be specified from Dart when showing the overlay.
+* **Configurable Height:** The height of the overlay adjust wrt to height keyboard height.
 * **Slide Animations:** Smooth slide-in and slide-out animations for the overlay window (configurable via native Android animations).
-* **Permission Handling:** Includes helpers to check and request the "display over other apps" permission on Android.
 
-## Screenshots
+
 
 
 ## Screenshots
