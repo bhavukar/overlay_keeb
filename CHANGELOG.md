@@ -1,3 +1,5 @@
 ## 0.0.1
 
-* TODO: Describe initial release.
+* Initial release of the overlay keyboard plugin
+* Support for Android platform
+* Core features: custom overlay UI display, show/hide methods
