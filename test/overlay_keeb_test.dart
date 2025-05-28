@@ -11,16 +11,19 @@ class MockOverlayKeebPlatform
   Future<String?> getPlatformVersion() => Future.value('42');
 
   @override
-  Future<void> showOverlay() => Future.value();
+  Future<void> showOverlay({int? overlayHeightDp}) => Future.value();
 
   @override
   Future<void> hideOverlay() => Future.value();
 
   @override
-  Future<bool> checkOverlayPermission() => Future.value(true);
-
-  @override
-  Future<bool> requestOverlayPermission() => Future.value(true);
+  Future<void> registerOverlayUi({
+    required String entrypointFunctionName,
+    required String entrypointLibraryPath,
+  }) {
+    // Mock implementation for testing
+    return Future.value();
+  }
 }
 
 void main() {

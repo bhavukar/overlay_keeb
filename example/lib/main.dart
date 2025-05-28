@@ -69,92 +69,72 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   final TextEditingController _controller = TextEditingController();
-  final FocusNode _textFieldFocusNode = FocusNode(); // Add a FocusNode
-  bool showPicker = false; // For your purely Flutter-based picker example
+  final FocusNode _textFieldFocusNode = FocusNode();
+  bool showPicker = false;
 
   final OverlayKeeb _overlayKeebPlugin = OverlayKeeb();
-  bool _hasOverlayPermission = false;
-  bool _nativeOverlayVisible = false; // Renamed for clarity
+  bool _nativeOverlayVisible = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _checkPermissionOnInit();
+    _registerCustomOverlayUi(); // <--- ADD THIS CALL HERE
+  }
+
+  Future<void> _registerCustomOverlayUi() async {
+    try {
+      // IMPORTANT: Replace 'overlay_keeb_example' with your actual example app's package name
+      // as defined in your example/pubspec.yaml if it's different.
+      // And ensure 'custom_overlay.dart' is the correct path from your example/lib/ folder.
+      String exampleAppPackageName = "overlay_keeb_example"; // <<< VERIFY THIS
+      String overlayUiFilePathInLib =
+          "custom_overlay.dart"; // <<< VERIFY THIS PATH
+
+      await _overlayKeebPlugin.registerOverlayUi(
+        entrypointFunctionName:
+            "myCoolOverlayMain", // This should match your @pragma function
+        entrypointLibraryPath:
+            "package:$exampleAppPackageName/$overlayUiFilePathInLib",
+      );
+      if (kDebugMode) {
+        print(
+          "OverlayKeebPlugin (ExampleApp): Custom overlay UI registered with path: package:$exampleAppPackageName/$overlayUiFilePathInLib",
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print(
+          "OverlayKeebPlugin (ExampleApp): Failed to register custom overlay UI: $e",
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
+    // ... (your existing dispose code)
     WidgetsBinding.instance.removeObserver(this);
     if (_nativeOverlayVisible) {
       _overlayKeebPlugin.hideOverlay();
     }
-    _textFieldFocusNode.dispose(); // Dispose FocusNode
+    _textFieldFocusNode.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // ... (your existing didChangeAppLifecycleState code)
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      _updatePermissionStatus();
     } else if (state == AppLifecycleState.paused) {
-      // Optionally hide the overlay when the app is paused
       if (_nativeOverlayVisible) {
         _hideNativeOverlay();
       }
     }
   }
 
-  Future<void> _checkPermissionOnInit() async {
-    final status = await _overlayKeebPlugin.checkOverlayPermission();
-    if (mounted) {
-      setState(() {
-        _hasOverlayPermission = status;
-      });
-      if (!status && kDebugMode) {
-        print("OverlayKeebPlugin: Overlay permission not granted yet.");
-      }
-    }
-  }
-
-  Future<void> _updatePermissionStatus() async {
-    final status = await _overlayKeebPlugin.checkOverlayPermission();
-    if (mounted) {
-      setState(() {
-        _hasOverlayPermission = status;
-      });
-    }
-  }
-
   Future<void> _requestPermissionAndShowNativeOverlay() async {
-    bool permissionGranted = _hasOverlayPermission;
-    if (!permissionGranted) {
-      await _overlayKeebPlugin.requestOverlayPermission();
-      permissionGranted =
-          await _overlayKeebPlugin.checkOverlayPermission(); // Re-check
-      if (mounted) {
-        // Update state after permission attempt
-        setState(() {
-          _hasOverlayPermission = permissionGranted;
-        });
-      }
-    }
-
-    if (!permissionGranted) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Overlay permission is required. Please grant it in settings and try again.',
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
-    // If permission is now granted
     try {
       await _overlayKeebPlugin.showOverlay();
 
@@ -176,7 +156,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _hideNativeOverlay() async {
-    if (!_nativeOverlayVisible) return; // Don't try to hide if not visible
+    // ... (your existing _hideNativeOverlay code)
+    if (!_nativeOverlayVisible) return;
     try {
       await _overlayKeebPlugin.hideOverlay();
       if (mounted) {
@@ -193,20 +174,16 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    // ... (your existing build method)
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Column(
         children: [
           Expanded(
             child: GestureDetector(
-              // GestureDetector to unfocus TextField when tapping outside
               onTap: () {
                 if (_textFieldFocusNode.hasFocus) {
                   _textFieldFocusNode.unfocus();
-                  // Optionally hide native overlay when chat area is tapped
-                  // if (_nativeOverlayVisible) {
-                  //   _hideNativeOverlay();
-                  // }
                 }
               },
               child: Stack(
@@ -225,33 +202,27 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    focusNode: _textFieldFocusNode, // Assign FocusNode
+                    focusNode: _textFieldFocusNode,
                     decoration: const InputDecoration(
                       hintText: "Type a message",
                     ),
                     onTap: () {
-                      // When text field is tapped, ensure our custom UIs are hidden
                       if (showPicker) {
                         setState(() {
                           showPicker = false;
                         });
                       }
-                      // If native overlay is visible when TextField is tapped, hide it.
-                      // This allows user to easily get back to typing.
                       if (_nativeOverlayVisible) {
                         _hideNativeOverlay();
                       }
                     },
                   ),
                 ),
-                // Button for purely Flutter-based picker (example)
                 IconButton(
                   icon: const Icon(Icons.mood),
                   onPressed: () {
-                    if (_nativeOverlayVisible)
-                      _hideNativeOverlay(); // Hide native if shown
+                    if (_nativeOverlayVisible) _hideNativeOverlay();
 
-                    // If keyboard is open, hide it to show the pure Flutter picker
                     if (_textFieldFocusNode.hasFocus) {
                       _textFieldFocusNode.unfocus();
                     }
@@ -260,37 +231,24 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                     });
                   },
                 ),
-                // Button for Native Flutter Overlay
                 IconButton(
-                  icon: const Icon(
-                    Icons.attachment,
-                  ), // Changed to attachment for clarity
-                  onPressed: () {
+                  icon: const Icon(Icons.attachment),
+                  onPressed: () async {
+                    // Make this async if you added await for focus
                     if (showPicker) {
-                      setState(
-                        () => showPicker = false,
-                      ); // Hide pure Flutter picker
+                      setState(() => showPicker = false);
                     }
 
                     if (_nativeOverlayVisible) {
-                      _hideNativeOverlay();
-                      // After hiding, if TextField had focus, it should retain it.
-                      // If not, and you want to ensure keyboard comes back:
-                      // _textFieldFocusNode.requestFocus();
+                      await _hideNativeOverlay(); // ensure await if _hideNativeOverlay is async
                     } else {
-                      // KEY CHANGE: REMOVED FocusScope.of(context).unfocus();
-                      // The keyboard should stay open if the TextField is focused.
-                      // The native overlay has FLAG_NOT_FOCUSABLE.
-
-                      // If the TextField is not focused, and you want the keyboard
-                      // to appear before showing the overlay, you could request focus here.
-                      // However, typically this button is tapped when TextField already has focus.
                       if (!_textFieldFocusNode.hasFocus) {
-                        _textFieldFocusNode
-                            .requestFocus(); // This will bring up the keyboard
+                        _textFieldFocusNode.requestFocus();
+                        await Future.delayed(
+                          const Duration(milliseconds: 100),
+                        ); // Optional delay
                       }
-                      // Now request and show the overlay
-                      _requestPermissionAndShowNativeOverlay();
+                      await _requestPermissionAndShowNativeOverlay();
                     }
                   },
                 ),

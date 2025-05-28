@@ -11,7 +11,10 @@
 * **Slide Animations:** Smooth slide-in and slide-out animations for the overlay window (configurable via native Android animations).
 * **Permission Handling:** Includes helpers to check and request the "display over other apps" permission on Android.
 
+## Screenshots
 
+<video src="https://github.com/bhavukar/overlay_keeb/blob/master/sample.mp4" controls="controls" style="max-width: 730px;">
+</video>
 
 
 1.  Add this to your package's `pubspec.yaml` file:
