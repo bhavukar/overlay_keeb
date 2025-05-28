@@ -1,7 +1,3 @@
-/// A Flutter plugin that enables custom overlay keyboards on Android and iOS.
-///
-/// This plugin allows displaying custom Flutter UI components as an overlay
-/// above the standard keyboard, similar to WhatsApp's attachment menu.
 import 'overlay_keeb_platform_interface.dart';
 
 /// Main class for the Overlay Keyboard plugin.

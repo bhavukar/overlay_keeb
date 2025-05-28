@@ -1,7 +1,3 @@
-/// Implementation of a method channel-based service to communicate with the native platform code.
-///
-/// This class provides the actual implementation of the [OverlayKeebPlatform] abstract methods
-/// using Flutter's [MethodChannel] to interact with native Android/iOS code.
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 

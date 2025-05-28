@@ -1,8 +1,3 @@
-/// Platform interface for the Overlay Keyboard plugin.
-///
-/// This abstract class defines the contract that platform-specific implementations
-/// must adhere to. Using a platform interface pattern enables proper platform
-/// abstraction and plugin testing.
 import 'package:overlay_keeb/overlay_keeb_method_channel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
