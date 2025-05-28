@@ -13,8 +13,7 @@
 
 
 ## Screenshots
-https://github.com/user-attachments/assets/dc4a2c26-02e0-42fc-a0ff-beb19adfcb15
-
+![screen-20250529-025029 mp42](https://github.com/user-attachments/assets/f911537c-719d-4e53-adca-7f38dd7a89ea)
 
 
 1.  Add this to your package's `pubspec.yaml` file:
