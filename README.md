@@ -13,8 +13,10 @@
 
 ## Screenshots
 
-<video src="https://github.com/bhavukar/overlay_keeb/blob/master/sample.mp4" controls="controls" style="max-width: 730px;">
-</video>
+
+## Screenshots
+https://github.com/user-attachments/assets/dc4a2c26-02e0-42fc-a0ff-beb19adfcb15
+
 
 
 1.  Add this to your package's `pubspec.yaml` file:
