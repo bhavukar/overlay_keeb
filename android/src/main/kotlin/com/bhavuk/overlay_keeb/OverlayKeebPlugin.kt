@@ -19,9 +19,10 @@ import androidx.annotation.NonNull
 
 // Flutter imports
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.FlutterEngineGroup // Import FlutterEngineGroup
 import io.flutter.embedding.android.FlutterView
 import io.flutter.embedding.engine.dart.DartExecutor
-// import io.flutter.embedding.engine.FlutterAssets // REMOVE THIS IMPORT if not used elsewhere
+// import io.flutter.embedding.engine.FlutterAssets // Not directly used in DartEntrypoint creation now
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -44,6 +45,9 @@ class OverlayKeebPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activi
   private var userEntrypointFunctionName: String? = null
   private var userEntrypointLibraryPath: String? = null // This is expected to be the package URI
 
+  // FlutterEngineGroup for managing multiple engines
+  private var engineGroup: FlutterEngineGroup? = null
+
   companion object {
     private const val TAG = "OverlayKeebPlugin"
     private const val DEFAULT_OVERLAY_HEIGHT_DP = 250
@@ -53,12 +57,15 @@ class OverlayKeebPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activi
     this.flutterPluginBindingInstance = flutterPluginBinding
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "overlay_keeb")
     channel.setMethodCallHandler(this)
-    Log.d(TAG, "onAttachedToEngine: Plugin attached to main engine.")
+    // Initialize engineGroup here, needs a context. Application context is good.
+    engineGroup = FlutterEngineGroup(flutterPluginBinding.applicationContext)
+    Log.d(TAG, "onAttachedToEngine: Plugin attached and FlutterEngineGroup created.")
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
     Log.d(TAG, "onDetachedFromEngine: Plugin detached from main engine. Cleaning up overlay...")
-    cleanUpFlutterOverlay()
+    cleanUpFlutterOverlay() // This will also destroy the engine
+    engineGroup = null // Release engine group
     this.flutterPluginBindingInstance = null
     channel.setMethodCallHandler(null)
   }
@@ -88,7 +95,7 @@ class OverlayKeebPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activi
     when (call.method) {
       "registerOverlayUi" -> {
         userEntrypointFunctionName = call.argument<String>("entrypointFunctionName")
-        userEntrypointLibraryPath = call.argument<String>("entrypointLibraryPath") // Should be package:app/file.dart
+        userEntrypointLibraryPath = call.argument<String>("entrypointLibraryPath")
         if (userEntrypointFunctionName != null && userEntrypointLibraryPath != null) {
           Log.d(TAG, "Registered overlay UI: Fn='${userEntrypointFunctionName}' Lib='${userEntrypointLibraryPath}'")
           result.success(null)
@@ -112,6 +119,11 @@ class OverlayKeebPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activi
         }
         if (userEntrypointFunctionName == null || userEntrypointLibraryPath == null) {
           result.error("UI_NOT_REGISTERED", "Overlay UI has not been registered. Call registerOverlayUi first.", null)
+          return
+        }
+        if (engineGroup == null) {
+          Log.e(TAG, "FlutterEngineGroup is null. Cannot create overlay engine.")
+          result.error("ENGINE_GROUP_NULL", "FlutterEngineGroup not initialized.", null)
           return
         }
 
@@ -138,11 +150,10 @@ class OverlayKeebPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activi
       Log.e(TAG, "showFlutterOverlayWithPopupWindow: Activity is null. Cannot show overlay.")
       return
     }
-    // FlutterPluginBindingInstance is not directly used for DartEntrypoint creation in this version
-    // val currentPluginBinding = flutterPluginBindingInstance ?: run {
-    //     Log.e(TAG, "showFlutterOverlayWithPopupWindow: FlutterPluginBindingInstance is null.")
-    //     return
-    // }
+    val currentEngineGroup = engineGroup ?: run {
+      Log.e(TAG, "showFlutterOverlayWithPopupWindow: FlutterEngineGroup is null. Cannot create engine.")
+      return
+    }
     val entrypointName = userEntrypointFunctionName!!
     val libraryUriFromDart = userEntrypointLibraryPath!! // This IS the package URI from Dart
 
@@ -158,40 +169,43 @@ class OverlayKeebPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activi
 
     val overlayHeightInPixels = if (keyboardHeight > 0) keyboardHeight else (DEFAULT_OVERLAY_HEIGHT_DP * currentActivity.resources.displayMetrics.density).toInt()
 
-    val flutterLoader: FlutterLoader = FlutterInjector.instance().flutterLoader()
-    if (!flutterLoader.initialized()) {
-      Log.d(TAG, "showFlutterOverlayWithPopupWindow: Initializing FlutterLoader.")
-      flutterLoader.startInitialization(currentActivity.applicationContext)
-      flutterLoader.ensureInitializationComplete(currentActivity.applicationContext, null)
-    }
+    // FlutterLoader is still used by FlutterEngineGroup implicitly.
+    // val flutterLoader: FlutterLoader = FlutterInjector.instance().flutterLoader()
+    // if (!flutterLoader.initialized()) {
+    //     Log.d(TAG, "showFlutterOverlayWithPopupWindow: Initializing FlutterLoader.")
+    //     flutterLoader.startInitialization(currentActivity.applicationContext)
+    //     flutterLoader.ensureInitializationComplete(currentActivity.applicationContext, null)
+    // }
 
-    Log.d(TAG, "showFlutterOverlayWithPopupWindow: Creating new FlutterEngine for overlay.")
-    overlayFlutterEngine = FlutterEngine(currentActivity.applicationContext)
+    Log.d(TAG, "showFlutterOverlayWithPopupWindow: Creating and running new FlutterEngine via FlutterEngineGroup for overlay.")
 
-    // --- CORRECTED DartEntrypoint Creation ---
-    // Use appBundlePath (String) as the first argument.
-    // libraryUriFromDart (String) is the package URI.
-    // entrypointName (String) is the function name.
-    val appBundlePath = flutterLoader.findAppBundlePath()
+    // --- MODIFIED DartEntrypoint and Engine Creation using FlutterEngineGroup ---
+    // The DartEntrypoint now only needs the URI and function name if appBundlePath is handled by the group.
+    // However, the createAndRunEngine method often takes a DartExecutor.DartEntrypoint.
+    // Let's use the standard DartEntrypoint constructor that takes appBundlePath.
+    val appBundlePath = FlutterInjector.instance().flutterLoader().findAppBundlePath()
     if (appBundlePath == null) {
-      Log.e(TAG, "showFlutterOverlayWithPopupWindow: appBundlePath is null. Flutter assets not found?")
-      overlayFlutterEngine?.destroy()
-      overlayFlutterEngine = null
+      Log.e(TAG, "showFlutterOverlayWithPopupWindow: appBundlePath is null. Flutter assets not found for DartEntrypoint?")
       return
     }
 
     val dartEntrypoint = DartExecutor.DartEntrypoint(
       appBundlePath,      // Path to the flutter_assets directory
-      libraryUriFromDart, // This should be the package URI like "package:app_name/file.dart"
+      libraryUriFromDart, // This should be the package URI like "package:overlay_keeb_example/custom_overlay.dart"
       entrypointName
     )
 
-    Log.d(TAG, "showFlutterOverlayWithPopupWindow: Executing USER'S Dart entrypoint: $entrypointName (using library URI '$libraryUriFromDart' and appBundlePath)")
-    overlayFlutterEngine!!.dartExecutor.executeDartEntrypoint(dartEntrypoint, null)
+    // Create and run the engine using the group
+    // The context passed here is for the engine's general Android system services.
+    overlayFlutterEngine = currentEngineGroup.createAndRunEngine(currentActivity.applicationContext, dartEntrypoint)
+
+    Log.d(TAG, "showFlutterOverlayWithPopupWindow: Engine created and Dart entrypoint execution initiated via FlutterEngineGroup.")
+    Log.d(TAG, "showFlutterOverlayWithPopupWindow: Executing USER'S Dart entrypoint: $entrypointName (using library URI '$libraryUriFromDart')")
+
 
     Log.d(TAG, "showFlutterOverlayWithPopupWindow: Creating FlutterView for overlay.")
     overlayFlutterView = FlutterView(currentActivity)
-    overlayFlutterView!!.attachToFlutterEngine(overlayFlutterEngine!!)
+    overlayFlutterView!!.attachToFlutterEngine(overlayFlutterEngine!!) // Attach the newly created engine
 
     popupWindow = PopupWindow(
       overlayFlutterView,
@@ -256,6 +270,10 @@ class OverlayKeebPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activi
 
     overlayFlutterView?.detachFromFlutterEngine()
     overlayFlutterView = null
+    // The engine created by FlutterEngineGroup is managed by the group.
+    // Destroying it here might be redundant or incorrect if the group handles its lifecycle.
+    // Typically, you destroy engines when the group itself is no longer needed or if you explicitly want to free one.
+    // For now, let's keep the explicit destroy, but be aware of group management.
     overlayFlutterEngine?.destroy()
     overlayFlutterEngine = null
     Log.d(TAG, "hideFlutterOverlayInternal: Flutter engine and view resources nulled and engine destroyed.")
